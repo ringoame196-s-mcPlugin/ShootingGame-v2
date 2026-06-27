@@ -46,8 +46,15 @@ configure<BukkitPluginDescription> {
         register("shootinggame") {
             description = "ShootingGame"
             aliases = listOf("sgame")
-            permission = "op"
-            usage = "/shootinggame <start,stop,target> (<add,remove>)"
+            permission = "shootinggame.admin"
+            usage = "/shootinggame <start,stop,target> (<add,remove>,<target>)"
+        }
+
+        permissions {
+            register("shootinggame.admin") {
+                description = "ShootingGame-AdminPermission"
+                default = BukkitPluginDescription.Permission.Default.OP
+            }
         }
     }
 }
