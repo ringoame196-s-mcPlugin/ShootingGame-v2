@@ -33,6 +33,9 @@ configurations["implementation"].extendsFrom(shadowImplementation)
 dependencies {
     shadowImplementation(kotlin("stdlib"))
     compileOnly("io.papermc.paper:paper-api:$mcVersion-R0.1-SNAPSHOT")
+    implementation("org.yaml:snakeyaml:2.2") // yamlファイル読み込み用
+    val sqliteVersion = "3.46.1.0"
+    implementation("org.xerial:sqlite-jdbc:$sqliteVersion") // SQLite
 }
 
 configure<BukkitPluginDescription> {
