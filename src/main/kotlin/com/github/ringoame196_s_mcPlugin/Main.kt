@@ -7,11 +7,23 @@ import org.bukkit.plugin.java.JavaPlugin
 
 class Main : JavaPlugin() {
     private val plugin = this
+    lateinit var db: DataBaseManager
+
     override fun onEnable() {
         super.onEnable()
         // config関係
         saveDefaultConfig()
         loadConfig()
+
+        // db関係
+        db = DataBaseManager(this, "data.db")
+        db.init()
+
+        // message関係
+        saveResource("message.yml", false)
+        val yamlFIleManager = YamlFileManager()
+        val messageData = yamlFIleManager.loadYAsMap("${plugin.file.path}/message.yml")
+        MessageManager.load(messageData)
 
         // targetList関係
         saveResource(Data.TARGET_LIST_FILE_NAME, false)
