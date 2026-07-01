@@ -14,6 +14,4 @@ object Data {
     var targetHitCount = 0
 
     val playerHitData = mutableMapOf<Player, Int>()
-
-    const val TARGET_LIST_FILE_NAME = "target_list.yml"
 }

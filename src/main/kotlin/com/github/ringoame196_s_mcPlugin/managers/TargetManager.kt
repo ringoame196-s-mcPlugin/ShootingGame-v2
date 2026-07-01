@@ -1,6 +1,7 @@
 package com.github.ringoame196_s_mcPlugin.managers
 
 import com.github.ringoame196_s_mcPlugin.Data
+import com.github.ringoame196_s_mcPlugin.DataBaseManager
 import net.md_5.bungee.api.chat.ClickEvent
 import net.md_5.bungee.api.chat.ComponentBuilder
 import net.md_5.bungee.api.chat.HoverEvent
@@ -10,13 +11,13 @@ import org.bukkit.ChatColor
 import org.bukkit.Location
 import org.bukkit.entity.Pig
 import org.bukkit.entity.Player
-import org.bukkit.plugin.Plugin
-import java.io.File
 
-class TargetManager(plugin: Plugin) {
-    private val ymlFileManager = YmlFileManager()
-    private val saveKey = "targetList"
-    private val file = File(plugin.dataFolder, Data.TARGET_LIST_FILE_NAME)
+object TargetManager {
+    private lateinit var db: DataBaseManager
+
+    fun init(database: DataBaseManager) {
+        db = database
+    }
 
     fun add(player: Player) {
         Data.targetList.add(player.location.block.location)
