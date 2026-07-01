@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS targets (
-world_name TEXT NOT NULL,
+    world_name TEXT NOT NULL,
     x INTEGER NOT NULL,
     y INTEGER NOT NULL,
     z INTEGER NOT NULL,
