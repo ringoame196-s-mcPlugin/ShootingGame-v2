@@ -12,8 +12,8 @@ import org.bukkit.command.TabCompleter
 import org.bukkit.entity.Player
 import org.bukkit.plugin.Plugin
 
-class Command(private val plugin: Plugin) : CommandExecutor, TabCompleter {
-    private val gameManager = GameManager(plugin)
+class Command(plugin: Plugin) : CommandExecutor, TabCompleter {
+    private val gameManager = GameManager()
     private val gun = GUN(plugin)
 
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
@@ -63,9 +63,9 @@ class Command(private val plugin: Plugin) : CommandExecutor, TabCompleter {
 
         val subCommand = args[1]
         when (subCommand) {
-            CommandConst.ADD_SUB_COMMAND -> targetManager.add(sender)
-            CommandConst.REMOVE_SUB_COMMAND -> targetManager.remove(sender)
-            CommandConst.LIST_SUB_COMMAND -> targetManager.check(sender)
+            CommandConst.ADD_SUB_COMMAND -> TargetManager.add(sender)
+            CommandConst.REMOVE_SUB_COMMAND -> TargetManager.remove(sender)
+            CommandConst.LIST_SUB_COMMAND -> TargetManager.check(sender)
         }
 
         return true

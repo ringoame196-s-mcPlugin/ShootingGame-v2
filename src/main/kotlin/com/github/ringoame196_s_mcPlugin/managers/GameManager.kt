@@ -8,23 +8,21 @@ import org.bukkit.command.CommandSender
 import org.bukkit.plugin.Plugin
 import kotlin.collections.iterator
 
-class GameManager(plugin: Plugin) {
-    private val targetManager = TargetManager(plugin)
-
+class GameManager {
     fun start(sender: CommandSender) {
         if (Data.gameStatus) {
             val message = "${ChatColor.RED}既にゲームスタートしています"
             sender.sendMessage(message)
             return
         }
-        if (Data.targetList.isEmpty()) {
+        if (TargetManager.isEmpty()) {
             val message = "${ChatColor.RED}ターゲットを1つ以上設定してください"
             sender.sendMessage(message)
             return
         }
         val startMessage = "${ChatColor.YELLOW}シューティングゲーム スタート"
         Bukkit.broadcastMessage(startMessage)
-        targetManager.randomSummon()
+        TargetManager.randomSummon()
         Data.gameStatus = true
     }
 
