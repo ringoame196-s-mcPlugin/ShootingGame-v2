@@ -10,54 +10,66 @@ import java.util.concurrent.Executors
 import kotlin.io.use
 
 class DataBaseManager(private val plugin: Plugin, dbName: String) {
-    private val dbFile: File = File(plugin.dataFolder, dbName)
-    private val executor = Executors.newSingleThreadExecutor() // SQLiteはシングルスレッドが安全
 
-    private lateinit var connection: Connection
+    private val dbFile = File(plugin.dataFolder, dbName)
+    private val executor = Executors.newSingleThreadExecutor()
 
     fun init() {
         if (!plugin.dataFolder.exists()) {
             plugin.dataFolder.mkdirs()
         }
 
-        connection = DriverManager.getConnection("jdbc:sqlite:${dbFile.path}")
+        useConnection { connection ->
+            val schema = loadSQL("schema.sql")
 
-        val schema = loadSQL("schema.sql")
-        connection.createStatement().use { stmt ->
-            stmt.executeUpdate(schema)
-        }
-
-        // SQLite最適化設定
-        connection.createStatement().use { stmt ->
-            stmt.execute("PRAGMA journal_mode=WAL;")
-            stmt.execute("PRAGMA synchronous=NORMAL;")
-            stmt.execute("PRAGMA foreign_keys=ON;")
+            connection.createStatement().use { stmt ->
+                stmt.executeUpdate(schema)
+            }
         }
     }
 
     fun close() {
-        try {
-            connection.close()
-            executor.shutdown()
-        } catch (e: SQLException) {
-            plugin.logger.severe("DB Close Error: ${e.message}")
+        executor.shutdown()
+    }
+
+    /**
+     * Connectionを取得して自動で閉じる
+     */
+    private fun <T> useConnection(block: (Connection) -> T): T {
+        DriverManager.getConnection("jdbc:sqlite:${dbFile.path}").use { connection ->
+
+            // Connection毎に設定
+            connection.createStatement().use { stmt ->
+                stmt.execute("PRAGMA foreign_keys = ON;")
+                stmt.execute("PRAGMA journal_mode = WAL;")
+                stmt.execute("PRAGMA synchronous = NORMAL;")
+            }
+
+            return block(connection)
         }
     }
 
     private fun loadSQL(fileName: String): String {
-        return plugin.getResource(fileName)?.bufferedReader()?.use { it.readText() }
+        return plugin.getResource(fileName)
+            ?.bufferedReader()
+            ?.use { it.readText() }
             ?: error("SQL file not found: $fileName")
     }
 
     /**
-     * 非同期 UPDATE (INSERT / UPDATE / DELETE)
+     * INSERT / UPDATE / DELETE
      */
-    fun executeUpdate(sql: String, params: List<Any> = emptyList()) {
+    fun executeUpdate(
+        sql: String,
+        params: List<Any> = emptyList()
+    ) {
         executor.execute {
             try {
-                connection.prepareStatement(sql).use { stmt ->
-                    params.bind(stmt)
-                    stmt.executeUpdate()
+                useConnection { connection ->
+                    connection.prepareStatement(sql).use { stmt ->
+                        params.bind(stmt)
+                        stmt.executeUpdate()
+                    }
                 }
             } catch (e: SQLException) {
                 plugin.logger.severe("SQL Update Error: ${e.message}")
@@ -66,7 +78,7 @@ class DataBaseManager(private val plugin: Plugin, dbName: String) {
     }
 
     /**
-     * 非同期 SELECT（複数行）
+     * SELECT
      */
     fun query(
         sql: String,
@@ -74,22 +86,27 @@ class DataBaseManager(private val plugin: Plugin, dbName: String) {
         handler: (List<Map<String, Any?>>) -> Unit
     ) {
         executor.execute {
+
             val results = mutableListOf<Map<String, Any?>>()
 
             try {
-                connection.prepareStatement(sql).use { stmt ->
-                    params.bind(stmt)
-                    stmt.executeQuery().use { rs ->
-                        val meta = rs.metaData
-                        val columnCount = meta.columnCount
+                useConnection { connection ->
+                    connection.prepareStatement(sql).use { stmt ->
 
-                        while (rs.next()) {
-                            val row = mutableMapOf<String, Any?>()
-                            for (i in 1..columnCount) {
-                                val key = meta.getColumnName(i)
-                                row[key] = rs.getObject(i)
+                        params.bind(stmt)
+
+                        stmt.executeQuery().use { rs ->
+                            val meta = rs.metaData
+
+                            while (rs.next()) {
+                                val row = mutableMapOf<String, Any?>()
+
+                                for (i in 1..meta.columnCount) {
+                                    row[meta.getColumnName(i)] = rs.getObject(i)
+                                }
+
+                                results.add(row)
                             }
-                            results.add(row)
                         }
                     }
                 }
@@ -97,13 +114,7 @@ class DataBaseManager(private val plugin: Plugin, dbName: String) {
                 plugin.logger.severe("SQL Query Error: ${e.message}")
             }
 
-            // メインスレッドに戻す
-            plugin.server.scheduler.runTask(
-                plugin,
-                Runnable {
-                    handler(results)
-                }
-            )
+            plugin.server.scheduler.runTask(plugin, Runnable { handler(results) })
         }
     }
 
@@ -115,17 +126,16 @@ class DataBaseManager(private val plugin: Plugin, dbName: String) {
         params: List<Any> = emptyList(),
         handler: (Any?) -> Unit
     ) {
-        query(sql, params) { list ->
-            val value = list.firstOrNull()?.values?.firstOrNull()
-            handler(value)
+        query(sql, params) { rows ->
+            handler(rows.firstOrNull()?.values?.firstOrNull())
         }
     }
 
     /**
-     * PreparedStatement バインド
+     * PreparedStatementへ値をセット
      */
     private fun List<Any>.bind(stmt: PreparedStatement) {
-        this.forEachIndexed { index, value ->
+        forEachIndexed { index, value ->
             stmt.setObject(index + 1, value)
         }
     }
