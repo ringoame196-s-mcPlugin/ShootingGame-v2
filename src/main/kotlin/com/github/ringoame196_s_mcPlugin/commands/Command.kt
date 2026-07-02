@@ -24,7 +24,7 @@ class Command(plugin: Plugin) : CommandExecutor, TabCompleter {
             CommandConst.START_COMMAND -> gameManager.start(sender)
             CommandConst.STOP_COMMAND -> gameManager.stop()
             else -> {
-                val message = "${ChatColor.RED}構文が間違っています"
+                val message = "${ChatColor.RED}The syntax is incorrect."
                 sender.sendMessage(message)
             }
         }
@@ -48,17 +48,15 @@ class Command(plugin: Plugin) : CommandExecutor, TabCompleter {
             targetPlayer.inventory.addItem(gunItem)
         }
 
-        val message = "${targetPlayers.size}人に銃を配布しました"
-        sender.sendMessage(message)
+        sender.sendMessage("${targetPlayers.size} players have been given a gun.")
     }
 
     private fun target(sender: CommandSender, args: Array<out String>): Boolean {
         if (sender !is Player) {
-            sender.sendMessage("このコマンドはプレイヤーのみ実行可能です")
+            sender.sendMessage("Only players can execute this command.")
             return true
         }
 
-        val targetManager = TargetManager(plugin)
         if (args.size < 2) return false
 
         val subCommand = args[1]
