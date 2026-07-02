@@ -22,10 +22,12 @@ class Main : JavaPlugin() {
         TargetManager.load()
 
         // message関係
-        saveResource("message.yml", false)
+        /*
+            saveResource("message.yml", false)
         val yamlFIleManager = YamlFileManager()
         val messageData = yamlFIleManager.loadYAsMap("${plugin.file.path}/message.yml")
         MessageManager.load(messageData)
+         */
 
         server.pluginManager.registerEvents(GunEvent(plugin), plugin)
         val command = getCommand("shootinggame")
