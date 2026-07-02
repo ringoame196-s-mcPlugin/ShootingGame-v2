@@ -5,7 +5,6 @@ import net.md_5.bungee.api.ChatColor
 import org.bukkit.Bukkit
 import org.bukkit.Sound
 import org.bukkit.command.CommandSender
-import org.bukkit.plugin.Plugin
 import kotlin.collections.iterator
 
 class GameManager {

@@ -17,7 +17,7 @@ import org.bukkit.plugin.Plugin
 class GunEvent(plugin: Plugin) : Listener {
     private val gunManager = GunManager(plugin)
     private val gun = GUN(plugin)
-    private val gameManager = GameManager(plugin)
+    private val gameManager = GameManager()
 
     @EventHandler
     fun onPlayerInteract(e: PlayerInteractEvent) {
