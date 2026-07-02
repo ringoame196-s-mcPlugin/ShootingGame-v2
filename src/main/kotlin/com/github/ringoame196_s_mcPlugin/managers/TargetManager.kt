@@ -1,6 +1,7 @@
 package com.github.ringoame196_s_mcPlugin.managers
 
 import com.github.ringoame196_s_mcPlugin.Data
+import com.github.ringoame196_s_mcPlugin.DataBaseManager
 import net.md_5.bungee.api.chat.ClickEvent
 import net.md_5.bungee.api.chat.ComponentBuilder
 import net.md_5.bungee.api.chat.HoverEvent
@@ -10,28 +11,54 @@ import org.bukkit.ChatColor
 import org.bukkit.Location
 import org.bukkit.entity.Pig
 import org.bukkit.entity.Player
-import org.bukkit.plugin.Plugin
-import java.io.File
 
-class TargetManager(plugin: Plugin) {
-    private val ymlFileManager = YmlFileManager()
-    private val saveKey = "targetList"
-    private val file = File(plugin.dataFolder, Data.TARGET_LIST_FILE_NAME)
+object TargetManager {
+    private lateinit var db: DataBaseManager
+    private const val TABLE_NAME = "targets"
+    private const val WORLD_NAME_KEY = "world_name"
+    private const val X_KEY = "x"
+    private const val Y_KEY = "y"
+    private const val Z_KEY = "z"
+
+    private val targetList = mutableSetOf<Location>()
+
+    fun init(database: DataBaseManager) {
+        db = database
+    }
 
     fun add(player: Player) {
-        Data.targetList.add(player.location.block.location)
-        saveFile() // ymlに保存
+        val locaiton = player.location.block.location
+        targetList.add(locaiton)
+        addDB(locaiton)
 
         val message = "${ChatColor.AQUA}ターゲットを追加しました"
         player.sendMessage(message)
     }
 
+    fun load() {
+        val sql = "SELECT * FROM $TABLE_NAME"
+
+        db.query(sql) { rows ->
+            rows.forEach { row ->
+                val worldName = row[WORLD_NAME_KEY] as String
+                val x = row[X_KEY] as Int
+                val y = row[Y_KEY] as Int
+                val z = row[Z_KEY] as Int
+
+                val world = Bukkit.getWorld(worldName)
+                val location = Location(world, x.toDouble(), y.toDouble(), z.toDouble())
+
+                targetList.add(location)
+            }
+        }
+    }
+
     fun remove(player: Player) {
         val location = player.location.block.location
 
-        if (Data.targetList.contains(location)) {
-            Data.targetList.remove(location)
-            saveFile() // ymlに保存
+        if (targetList.contains(location)) {
+            targetList.remove(location)
+            removeDB(location)
             val message = "${ChatColor.YELLOW}現在の位置のターゲットを削除しました"
             player.sendMessage(message)
         } else {
@@ -40,9 +67,13 @@ class TargetManager(plugin: Plugin) {
         }
     }
 
+    fun isEmpty(): Boolean {
+        return targetList.isEmpty()
+    }
+
     fun check(player: Player) {
         player.sendMessage("${ChatColor.YELLOW}[ターゲット一覧]")
-        for (target in Data.targetList) {
+        for (target in targetList) {
             val command = "/tp @s ${target.x} ${target.y} ${target.z}"
 
             val prefix = TextComponent("${target.world?.name} ${target.x} ${target.y} ${target.z}")
@@ -59,7 +90,7 @@ class TargetManager(plugin: Plugin) {
 
     fun randomSummon() {
         val name = "${ChatColor.GREEN}ターゲット"
-        val location = Data.targetList.random()
+        val location = targetList.random()
         val pig: Pig? = location.world?.spawn(location.clone().add(0.5, 0.0, 0.5), Pig::class.java)
         pig?.let {
             // ゾンビの設定
@@ -70,35 +101,23 @@ class TargetManager(plugin: Plugin) {
         Data.target = pig
     }
 
-    fun saveFile() {
-        val targetList = Data.targetList
-        val list = mutableListOf<String>()
+    private fun addDB(location: Location) {
+        val worldName = location.world.name
+        val x = location.x
+        val y = location.y
+        val z = location.z
 
-        for (target in targetList) {
-            list.add("${target.world?.name},${target.x},${target.y},${target.z}")
-        }
-
-        ymlFileManager.setValue(file, saveKey, list)
+        val sql = "INSERT INTO $TABLE_NAME ($WORLD_NAME_KEY,$X_KEY,$Y_KEY,$Z_KEY) VALUES (?,?,?,?);"
+        db.executeUpdate(sql, mutableListOf(worldName, x, y, z))
     }
 
-    fun loadFile() {
-        Data.targetList.clear()
-        val list = ymlFileManager.acquisitionListValue(file, saveKey) ?: return
+    private fun removeDB(location: Location) {
+        val worldName = location.world.name
+        val x = location.x
+        val y = location.y
+        val z = location.z
 
-        for (value in list) {
-            Data.targetList.add(parseLocation(value) ?: continue)
-        }
-    }
-
-    private fun parseLocation(input: String): Location? {
-        val parts = input.split(",")
-        if (parts.size != 4) return null
-
-        val world = Bukkit.getWorld(parts[0]) ?: return null
-        val x = parts[1].toDoubleOrNull() ?: return null
-        val y = parts[2].toDoubleOrNull() ?: return null
-        val z = parts[3].toDoubleOrNull() ?: return null
-
-        return Location(world, x, y, z)
+        val sql = "DELETE FROM $TABLE_NAME WHERE $WORLD_NAME_KEY = ? AND $X_KEY = ? AND $Y_KEY = ? AND $Z_KEY =?;"
+        db.executeUpdate(sql, mutableListOf(worldName, x, y, z))
     }
 }

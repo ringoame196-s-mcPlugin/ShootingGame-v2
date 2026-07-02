@@ -18,17 +18,16 @@ class Main : JavaPlugin() {
         // db関係
         db = DataBaseManager(this, "data.db")
         db.init()
+        TargetManager.init(db)
+        TargetManager.load()
 
         // message関係
-        saveResource("message.yml", false)
+        /*
+            saveResource("message.yml", false)
         val yamlFIleManager = YamlFileManager()
         val messageData = yamlFIleManager.loadYAsMap("${plugin.file.path}/message.yml")
         MessageManager.load(messageData)
-
-        // targetList関係
-        saveResource(Data.TARGET_LIST_FILE_NAME, false)
-        val targetManager = TargetManager(plugin)
-        targetManager.loadFile()
+         */
 
         server.pluginManager.registerEvents(GunEvent(plugin), plugin)
         val command = getCommand("shootinggame")

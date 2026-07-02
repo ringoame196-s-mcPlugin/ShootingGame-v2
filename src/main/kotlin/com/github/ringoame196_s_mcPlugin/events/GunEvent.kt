@@ -17,8 +17,7 @@ import org.bukkit.plugin.Plugin
 class GunEvent(plugin: Plugin) : Listener {
     private val gunManager = GunManager(plugin)
     private val gun = GUN(plugin)
-    private val targetManager = TargetManager(plugin)
-    private val gameManager = GameManager(plugin)
+    private val gameManager = GameManager()
 
     @EventHandler
     fun onPlayerInteract(e: PlayerInteractEvent) {
@@ -61,6 +60,6 @@ class GunEvent(plugin: Plugin) : Listener {
 
         Data.targetHitCount ++
         if (Data.targetHitCount >= Data.targetGoal) gameManager.stop()
-        else targetManager.randomSummon()
+        else TargetManager.randomSummon()
     }
 }
