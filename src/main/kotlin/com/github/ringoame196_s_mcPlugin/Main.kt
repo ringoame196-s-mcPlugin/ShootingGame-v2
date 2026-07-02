@@ -19,6 +19,7 @@ class Main : JavaPlugin() {
         db = DataBaseManager(this, "data.db")
         db.init()
         TargetManager.init(db)
+        TargetManager.load()
 
         // message関係
         saveResource("message.yml", false)
